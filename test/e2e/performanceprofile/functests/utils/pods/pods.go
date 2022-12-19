@@ -21,6 +21,7 @@ import (
 	"k8s.io/client-go/tools/remotecommand"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	testutils "github.com/openshift/cluster-node-tuning-operator/test/e2e/performanceprofile/functests/utils"
 	testclient "github.com/openshift/cluster-node-tuning-operator/test/e2e/performanceprofile/functests/utils/client"
 	"github.com/openshift/cluster-node-tuning-operator/test/e2e/performanceprofile/functests/utils/images"
 )
@@ -28,10 +29,13 @@ import (
 // DefaultDeletionTimeout contains the default pod deletion timeout in seconds
 const DefaultDeletionTimeout = 120
 
+type Options func(pod *corev1.Pod)
+
 // GetTestPod returns pod with the busybox image
-func GetTestPod() *corev1.Pod {
-	return &corev1.Pod{
+func GetTestPod(opts ...Options) *corev1.Pod {
+	p := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
+			Namespace:    testutils.NamespaceTesting,
 			GenerateName: "test-",
 			Labels: map[string]string{
 				"test": "",
@@ -46,6 +50,31 @@ func GetTestPod() *corev1.Pod {
 				},
 			},
 		},
+	}
+	for _, opt := range opts {
+		opt(p)
+	}
+	return p
+}
+
+func WithResources(req corev1.ResourceRequirements) func(pod *corev1.Pod) {
+	return func(pod *corev1.Pod) {
+		pod.Spec.Containers[0].Resources = req
+	}
+}
+
+func WithAnnotations(annot map[string]string) func(pod *corev1.Pod) {
+	return func(pod *corev1.Pod) {
+		for k, v := range pod.Annotations {
+			annot[k] = v
+		}
+		pod.Annotations = annot
+	}
+}
+
+func WithContainerName(name string) func(pod *corev1.Pod) {
+	return func(pod *corev1.Pod) {
+		pod.Spec.Containers[0].Name = name
 	}
 }
 

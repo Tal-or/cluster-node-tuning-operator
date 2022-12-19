@@ -450,7 +450,6 @@ var _ = Describe("[rfe_id:27363][performance] CPU Management", func() {
 
 		BeforeEach(func() {
 			testpod = pods.GetTestPod()
-			testpod.Namespace = testutils.NamespaceTesting
 			testpod.Spec.NodeSelector = map[string]string{testutils.LabelHostname: workerRTNode.Name}
 			testpod.Spec.ShareProcessNamespace = pointer.BoolPtr(true)
 
@@ -786,7 +785,6 @@ func getTestPodWithProfileAndAnnotations(perfProf *performancev2.PerformanceProf
 	if len(annotations) > 0 {
 		testpod.Annotations = annotations
 	}
-	testpod.Namespace = testutils.NamespaceTesting
 
 	cpuCount := fmt.Sprintf("%d", cpus)
 
