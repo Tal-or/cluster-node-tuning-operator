@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"time"
 
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	corev1 "k8s.io/api/core/v1"
@@ -17,7 +18,10 @@ import (
 
 	performancev2 "github.com/openshift/cluster-node-tuning-operator/pkg/apis/performanceprofile/v2"
 	testclient "github.com/openshift/cluster-node-tuning-operator/test/e2e/performanceprofile/functests/utils/client"
+	"github.com/openshift/cluster-node-tuning-operator/test/e2e/performanceprofile/functests/utils/hypershift"
 	testlog "github.com/openshift/cluster-node-tuning-operator/test/e2e/performanceprofile/functests/utils/log"
+	"github.com/openshift/cluster-node-tuning-operator/test/e2e/performanceprofile/functests/utils/mcps"
+	"github.com/openshift/cluster-node-tuning-operator/test/e2e/performanceprofile/functests/utils/nodepools"
 	v1 "github.com/openshift/custom-resource-status/conditions/v1"
 )
 
@@ -139,6 +143,18 @@ func Delete(name string) error {
 		Name: name,
 	}
 	return WaitForDeletion(key, 2*time.Minute)
+}
+
+func GetByPoolName(ctx context.Context, profile *performancev2.PerformanceProfile) string {
+	GinkgoHelper()
+	if !hypershift.IsHypershiftCluster() {
+		poolName, err := mcps.GetByProfile(profile)
+		Expect(err).ToNot(HaveOccurred())
+		return poolName
+	}
+	np, err := nodepools.GetNodePool(ctx, testclient.ControlPlaneClient)
+	Expect(err).ToNot(HaveOccurred(), "failed to get node pool affected by profile: %q", profile.Name)
+	return client.ObjectKeyFromObject(np).String()
 }
 
 func prepareForUpdate(updated, current *performancev2.PerformanceProfile) *performancev2.PerformanceProfile {
